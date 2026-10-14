@@ -9,11 +9,13 @@ dependencies, data stays in your browser.
 - **Month view** — every day is an iOS widget (squircle card, SF-style type, habit dots) over real ukiyo-e artwork.
 - **Week view** — a card of habit lines with tappable stations for Mon–Sun and a today guide.
 - **Day drawer** — tap a day to toggle habits and write a journal note (autosaved).
+- **Two habit kinds** — simple **done / not done** habits, or **count** habits with a target number (e.g. Water 8). Count chips show the running number; the drawer has a −/+ stepper.
 - **Streaks** — current and best streak per habit, with a bump animation when a streak grows.
 - **Stats & heat map** — check-ins, perfect days, completion %, and a monthly heat grid.
 - **Themes** — Day / Night / Auto (follows the OS). Night is the default.
+- **Full screen** — the ⤢ button (or `F`) toggles full screen.
 - **Backup** — export / import all data as JSON.
-- **Keyboard** — `←`/`→` navigate, `M`/`W` views, `D`/`A`/`N` theme, `T` today, `Esc` close.
+- **Keyboard** — `←`/`→` navigate, `M`/`W` views, `D`/`A`/`N` theme, `F` full screen, `T` today, `Esc` close.
 
 Font uses the system stack, so it renders as **SF Pro on Apple devices** and the
 closest native system font elsewhere.

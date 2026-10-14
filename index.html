@@ -143,6 +143,16 @@
     background: var(--seg-active);
     box-shadow: 0 1px 3px rgba(0, 0, 0, .12), 0 .5px 1px rgba(0, 0, 0, .08);
   }
+  .ctrl-btn {
+    width: 38px; height: 38px; border-radius: 11px;
+    border: 0; background: var(--fill); color: var(--accent);
+    font-size: 18px; line-height: 1; cursor: pointer;
+    display: grid; place-items: center;
+    transition: background .18s ease, transform .18s ease;
+  }
+  .ctrl-btn:hover { background: var(--fill-2); }
+  .ctrl-btn:active { transform: scale(.94); }
+  .ctrl-btn.on { background: var(--accent); color: #fff; }
 
   /* ---------- layout ---------- */
   .content {
@@ -297,6 +307,16 @@
   }
   .add-form .go:hover { filter: brightness(1.06); }
   .add-form .go:active { filter: brightness(.94); }
+  .add-form .seg-sm { align-self: flex-start; }
+  .add-form .seg-sm button { padding: 7px 14px; font-size: 13px; }
+  .add-form .target-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 500; color: var(--muted);
+    letter-spacing: -0.01em;
+  }
+  .add-form .target-row input {
+    width: 84px; padding: 8px 11px; font-size: 14px; text-align: center;
+  }
 
   .rail-foot {
     margin-top: 14px;
@@ -460,6 +480,18 @@
   }
   .dot:hover { transform: scale(1.35); }
   .dot.done { background: var(--c); border-color: var(--c); }
+  .dot.count {
+    width: auto; min-width: 17px; height: 17px;
+    padding: 0 3px;
+    border-radius: 6px;
+    display: inline-grid; place-items: center;
+    font-size: 9.5px; font-weight: 600; line-height: 1;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+    transition: transform .14s cubic-bezier(.2, .8, .2, 1), background .14s ease, border-color .14s ease, color .14s ease;
+  }
+  .dot.count.partial { border-color: var(--c); color: var(--c); background: var(--fill); }
+  .dot.count.done { background: var(--c); border-color: var(--c); color: #fff; }
   .day.out .dot { border-color: var(--line); }
   .dot.pop { animation: dotPop .42s cubic-bezier(.2, .9, .25, 1); }
 
@@ -569,6 +601,16 @@
   .station:hover { transform: scale(1.3) !important; }
   .station.done { background: var(--c); }
   .station.pop { animation: dotPop .42s cubic-bezier(.2, .9, .25, 1); }
+  .station.count {
+    width: auto; min-width: 17px; height: 17px; padding: 0 2px;
+    border-radius: 6px;
+    display: inline-grid; place-items: center;
+    font-size: 9px; font-weight: 600; line-height: 1;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .station.count.partial { color: var(--c); background: var(--panel); }
+  .station.count.done { color: #fff; }
   .line-row .lcount {
     text-align: right;
     font-size: 13px;
@@ -843,6 +885,26 @@
   .d-habit.done .chk { background: var(--c); border-color: var(--c); }
   .d-habit.done .chk::after { content: "✓"; }
   .d-habit .chk.pop { animation: dotPop .42s cubic-bezier(.2, .9, .25, 1); }
+  .d-habit.count-row { cursor: default; }
+  .d-habit .n em {
+    font-style: normal; font-size: 13px; font-weight: 400;
+    color: var(--muted); margin-left: 8px; font-variant-numeric: tabular-nums;
+  }
+  .d-habit .stepper { display: flex; align-items: center; gap: 4px; flex: none; }
+  .d-habit .stepper button {
+    width: 30px; height: 30px; border-radius: 50%;
+    border: 0; background: var(--fill-2); color: var(--accent);
+    font-family: inherit; font-size: 19px; line-height: 1; cursor: pointer;
+    display: grid; place-items: center; padding: 0 0 2px;
+    transition: background .14s ease, transform .12s ease;
+  }
+  .d-habit .stepper button:hover { background: var(--line); }
+  .d-habit .stepper button:active { transform: scale(.9); }
+  .d-habit .stepper b {
+    min-width: 26px; text-align: center;
+    font-size: 16px; font-weight: 600; color: var(--c);
+    font-variant-numeric: tabular-nums;
+  }
 
   .d-note-label {
     font-size: 13px; font-weight: 600; letter-spacing: .04em;
@@ -949,6 +1011,7 @@
           <button data-theme="night" class="active">Night</button>
           <button data-theme="auto">Auto</button>
         </div>
+        <button class="ctrl-btn" id="fsBtn" title="Full screen (F)" aria-label="Toggle full screen">⤢</button>
       </div>
     </header>
 
@@ -962,6 +1025,14 @@
 
         <form class="add-form" id="addForm">
           <input id="habitName" maxlength="22" placeholder="New habit…" autocomplete="off" />
+          <div class="seg seg-sm" id="typeToggle">
+            <button type="button" data-type="check" class="active">Done / not</button>
+            <button type="button" data-type="count">Count</button>
+          </div>
+          <label class="target-row" id="targetRow" style="display:none">
+            Target
+            <input id="habitTarget" type="number" min="1" max="999" value="8" />
+          </label>
           <div class="palette" id="palette"></div>
           <button class="go" type="submit">Add habit</button>
         </form>
@@ -985,7 +1056,7 @@
       </section>
     </div>
 
-    <div class="hint">tap a day to open it &nbsp;·&nbsp; pages <kbd>1</kbd> <kbd>2</kbd> &nbsp;·&nbsp; <kbd>←</kbd> <kbd>→</kbd> navigate &nbsp;·&nbsp; <kbd>M</kbd> <kbd>W</kbd> views &nbsp;·&nbsp; <kbd>D</kbd> <kbd>A</kbd> <kbd>N</kbd> theme &nbsp;·&nbsp; <kbd>T</kbd> today</div>
+    <div class="hint">tap a day to open it &nbsp;·&nbsp; tap a habit dot to log it (count taps a number up) &nbsp;·&nbsp; pages <kbd>1</kbd> <kbd>2</kbd> &nbsp;·&nbsp; <kbd>←</kbd> <kbd>→</kbd> navigate &nbsp;·&nbsp; <kbd>M</kbd> <kbd>W</kbd> views &nbsp;·&nbsp; <kbd>D</kbd> <kbd>A</kbd> <kbd>N</kbd> theme &nbsp;·&nbsp; <kbd>F</kbd> full screen &nbsp;·&nbsp; <kbd>T</kbd> today</div>
   </div>
 
   <div class="scrim" id="scrim"></div>
@@ -1072,15 +1143,33 @@
       lines: 5,
       anchor: iso(new Date()),
       habits: [
-        { id: uid(), name: "Exercise", color: "#ff3b30" },
-        { id: uid(), name: "Read", color: "#007aff" },
-        { id: uid(), name: "Water", color: "#30b0c7" },
-        { id: uid(), name: "Meditate", color: "#af52de" }
+        { id: uid(), name: "Exercise", color: "#ff3b30", type: "check", target: 1 },
+        { id: uid(), name: "Read", color: "#007aff", type: "check", target: 1 },
+        { id: uid(), name: "Water", color: "#30b0c7", type: "count", target: 8 },
+        { id: uid(), name: "Meditate", color: "#af52de", type: "check", target: 1 }
       ],
       log: {},
+      values: {},
       notes: {},
       writing: {}
     };
+  }
+
+  function normalize(s) {
+    s.log = s.log || {};
+    s.values = s.values || {};
+    s.notes = s.notes || {};
+    s.writing = s.writing || {};
+    s.view = s.view === "week" ? "week" : "month";
+    s.page = s.page === 2 ? 2 : 1;
+    s.lines = s.lines === 4 ? 4 : 5;
+    if (s.theme !== "day" && s.theme !== "auto") s.theme = "night";
+    if (!s.anchor) s.anchor = iso(new Date());
+    s.habits.forEach(function (h) {
+      if (h.type !== "count") h.type = "check";
+      h.target = h.type === "count" ? Math.max(1, Math.min(999, Math.round(Number(h.target) || 1))) : 1;
+    });
+    return s;
   }
 
   function load() {
@@ -1091,20 +1180,13 @@
       if (!s || !Array.isArray(s.habits)) return seed();
       var MAP = { "#e5503e": "#ff3b30", "#f4a03c": "#ff9500", "#f2cf4a": "#ffcc00", "#5fb85f": "#34c759", "#3ba99c": "#30b0c7", "#4a90d9": "#007aff", "#8e6bbf": "#af52de", "#e07a9a": "#ff2d55", "#c96f5a": "#ff9500", "#7d8fa8": "#8e8e93" };
       s.habits.forEach(function (h) { if (MAP[h.color]) h.color = MAP[h.color]; });
-      s.log = s.log || {};
-      s.notes = s.notes || {};
-      s.writing = s.writing || {};
-      s.view = s.view === "week" ? "week" : "month";
-      s.page = s.page === 2 ? 2 : 1;
-      s.lines = s.lines === 4 ? 4 : 5;
-      if (s.theme !== "day" && s.theme !== "auto") s.theme = "night";
-      if (!s.anchor) s.anchor = iso(new Date());
-      return s;
+      return normalize(s);
     } catch (e) { return seed(); }
   }
 
   var state = load();
   var addColor = PALETTE[state.habits.length % PALETTE.length];
+  var addType = "check";
   var pendingPop = null;
   var lastStreak = {};
 
@@ -1112,17 +1194,54 @@
     try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
   }
 
-  function isDone(dateIso, habitId) {
+  function getHabit(id) {
+    for (var i = 0; i < state.habits.length; i++) if (state.habits[i].id === id) return state.habits[i];
+    return null;
+  }
+
+  function countValue(dateIso, h) {
+    var d = state.values[dateIso];
+    return (d && d[h.id]) || 0;
+  }
+
+  function isHabitDone(h, dateIso) {
+    if (h.type === "count") return countValue(dateIso, h) >= h.target;
     var a = state.log[dateIso];
-    return !!(a && a.indexOf(habitId) !== -1);
+    return !!(a && a.indexOf(h.id) !== -1);
+  }
+
+  function setCount(dateIso, h, v) {
+    if (!state.values[dateIso]) state.values[dateIso] = {};
+    if (v > 0) state.values[dateIso][h.id] = v; else delete state.values[dateIso][h.id];
+    if (!Object.keys(state.values[dateIso]).length) delete state.values[dateIso];
+  }
+
+  function bumpCount(dateIso, h, dir) {
+    var v = countValue(dateIso, h) + dir;
+    if (v > h.target) v = 0;
+    if (v < 0) v = h.target;
+    setCount(dateIso, h, v);
+  }
+
+  function stepCount(dateIso, h, dir) {
+    var v = countValue(dateIso, h) + dir;
+    if (v < 0) v = 0;
+    if (v > h.target) v = h.target;
+    setCount(dateIso, h, v);
   }
 
   function toggle(habitId, dateIso) {
-    var a = state.log[dateIso];
-    if (!a) { a = state.log[dateIso] = []; }
-    var i = a.indexOf(habitId);
-    if (i >= 0) a.splice(i, 1); else a.push(habitId);
-    if (!a.length) delete state.log[dateIso];
+    var h = getHabit(habitId);
+    if (!h) return;
+    if (h.type === "count") {
+      bumpCount(dateIso, h, 1);
+    } else {
+      var a = state.log[dateIso];
+      if (!a) { a = state.log[dateIso] = []; }
+      var i = a.indexOf(habitId);
+      if (i >= 0) a.splice(i, 1); else a.push(habitId);
+      if (!a.length) delete state.log[dateIso];
+    }
     save();
     pendingPop = { habit: habitId, date: dateIso };
     render();
@@ -1131,9 +1250,14 @@
 
   /* ---------- streaks & stats ---------- */
   function doneSet(habitId) {
+    var h = getHabit(habitId);
     var set = {};
+    if (!h) return set;
     Object.keys(state.log).forEach(function (k) {
-      if (state.log[k].indexOf(habitId) !== -1) set[k] = 1;
+      if (h.type !== "count" && state.log[k].indexOf(h.id) !== -1) set[k] = 1;
+    });
+    Object.keys(state.values).forEach(function (k) {
+      if (h.type === "count" && (state.values[k][h.id] || 0) >= h.target) set[k] = 1;
     });
     return set;
   }
@@ -1168,7 +1292,7 @@
     for (var i = 1; i <= nDays; i++) {
       var ds = iso(new Date(y, m, i));
       var done = 0;
-      state.habits.forEach(function (h) { if (isDone(ds, h.id)) done++; });
+      state.habits.forEach(function (h) { if (isHabitDone(h, ds)) done++; });
       checkins += done;
       if (total > 0 && done === total) perfect++;
       perDay.push({ date: ds, ratio: total ? done / total : 0 });
@@ -1285,7 +1409,7 @@
     var daySet = days.map(iso);
     state.habits.forEach(function (h) {
       var count = 0;
-      daySet.forEach(function (ds) { if (isDone(ds, h.id)) count++; });
+      daySet.forEach(function (ds) { if (isHabitDone(h, ds)) count++; });
       var cur = currentStreak(h.id);
       var best = bestStreak(h.id);
       var bump = lastStreak[h.id] !== undefined && cur > lastStreak[h.id];
@@ -1321,7 +1445,7 @@
       var ds = iso(d);
       var out = d.getMonth() !== anchor.getMonth();
       var done = 0;
-      state.habits.forEach(function (h) { if (isDone(ds, h.id)) done++; });
+      state.habits.forEach(function (h) { if (isHabitDone(h, ds)) done++; });
       var ratio = total ? done / total : 0;
       var cls = "day" + (out ? " out" : "") + (sameDay(d, today) ? " today" : "");
       if (state.notes[ds]) cls += " has-note";
@@ -1348,11 +1472,22 @@
       var dots = el("div", "dots");
       state.habits.forEach(function (h) {
         var isP = pendingPop && pendingPop.habit === h.id && pendingPop.date === ds;
-        var b = el("button", "dot" + (isDone(ds, h.id) ? " done" : "") + (isP ? " pop" : ""));
-        b.style.setProperty("--c", h.color);
+        var b;
+        if (h.type === "count") {
+          var v = countValue(ds, h);
+          var done = v >= h.target;
+          var cls = "dot count" + (done ? " done" : (v > 0 ? " partial" : "")) + (isP ? " pop" : "");
+          b = el("button", cls, v ? String(v) : "");
+          b.style.setProperty("--c", h.color);
+          b.title = h.name + " — " + v + "/" + h.target;
+        } else {
+          var dn = isHabitDone(h, ds);
+          b = el("button", "dot" + (dn ? " done" : "") + (isP ? " pop" : ""));
+          b.style.setProperty("--c", h.color);
+          b.title = h.name;
+        }
         b.dataset.habit = h.id;
         b.dataset.date = ds;
-        b.title = h.name;
         dots.appendChild(b);
       });
       cell.appendChild(dots);
@@ -1414,13 +1549,21 @@
       var count = 0;
       for (var j = 0; j < 7; j++) {
         var ds = iso(addDays(s, j));
-        var done = isDone(ds, h.id);
+        var done = isHabitDone(h, ds);
         if (done) count++;
         var isP = pendingPop && pendingPop.habit === h.id && pendingPop.date === ds;
-        var st = el("button", "station" + (done ? " done" : "") + (isP ? " pop" : ""));
+        var st;
+        if (h.type === "count") {
+          var v = countValue(ds, h);
+          st = el("button", "station count" + (done ? " done" : (v > 0 ? " partial" : "")) + (isP ? " pop" : ""), v ? String(v) : "");
+          st.style.setProperty("--c", h.color);
+          st.title = h.name + " — " + v + "/" + h.target;
+        } else {
+          st = el("button", "station" + (done ? " done" : "") + (isP ? " pop" : ""));
+          st.title = h.name + " — " + ds;
+        }
         st.dataset.habit = h.id;
         st.dataset.date = ds;
-        st.title = h.name + " — " + ds;
         track.appendChild(st);
       }
       row.appendChild(track);
@@ -1558,8 +1701,26 @@
     hostHost.innerHTML = "";
     if (!state.habits.length) { hostHost.appendChild(el("div", "empty", "No habits yet.")); return; }
     state.habits.forEach(function (h) {
-      var done = isDone(openDate, h.id);
-      var row = el("div", "d-habit" + (done ? " done" : ""));
+      var isP = pendingPop && pendingPop.habit === h.id && pendingPop.date === openDate;
+      if (h.type === "count") {
+        var v = countValue(openDate, h);
+        var done = v >= h.target;
+        var rowC = el("div", "d-habit count-row" + (done ? " done" : ""));
+        rowC.style.setProperty("--c", h.color);
+        rowC.dataset.habit = h.id;
+        rowC.innerHTML =
+          '<span class="swatch" style="background:' + h.color + '"></span>' +
+          '<span class="n">' + esc(h.name) + "<em>" + v + " / " + h.target + "</em></span>" +
+          '<span class="stepper">' +
+            '<button type="button" data-dec="1" aria-label="Decrease">−</button>' +
+            "<b>" + v + "</b>" +
+            '<button type="button" data-inc="1" aria-label="Increase">+</button>' +
+          "</span>";
+        hostHost.appendChild(rowC);
+        return;
+      }
+      var done2 = isHabitDone(h, openDate);
+      var row = el("div", "d-habit" + (done2 ? " done" : ""));
       row.style.setProperty("--c", h.color);
       row.dataset.habit = h.id;
       row.innerHTML =
@@ -1567,15 +1728,13 @@
         '<span class="n">' + esc(h.name) + "</span>" +
         '<span class="chk"></span>';
       hostHost.appendChild(row);
-      if (pendingPop && pendingPop.habit === h.id && pendingPop.date === openDate) {
-        row.querySelector(".chk").classList.add("pop");
-      }
+      if (isP) row.querySelector(".chk").classList.add("pop");
     });
   }
 
   function updateDrawerMeta() {
     var total = state.habits.length, done = 0;
-    state.habits.forEach(function (h) { if (isDone(openDate, h.id)) done++; });
+    state.habits.forEach(function (h) { if (isHabitDone(h, openDate)) done++; });
     var meta = done + " of " + total + " done";
     if (total && done === total) meta += " · perfect";
     if (state.notes[openDate]) meta += " · note";
@@ -1585,7 +1744,12 @@
   document.getElementById("dHabits").addEventListener("click", function (e) {
     var row = e.target.closest("[data-habit]");
     if (!row || !openDate) return;
-    toggle(row.dataset.habit, openDate);
+    var h = getHabit(row.dataset.habit);
+    if (!h) return;
+    if (e.target.closest("[data-inc]")) { stepCount(openDate, h, 1); save(); render(); return; }
+    if (e.target.closest("[data-dec]")) { stepCount(openDate, h, -1); save(); render(); return; }
+    if (h.type === "count") return;
+    toggle(h.id, openDate);
   });
 
   var noteTimer = null;
@@ -1736,6 +1900,20 @@
     if (addForm.classList.contains("open")) nameInput.focus();
   });
 
+  var typeToggle = document.getElementById("typeToggle");
+  var targetRow = document.getElementById("targetRow");
+  var targetInput = document.getElementById("habitTarget");
+  typeToggle.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-type]");
+    if (!b) return;
+    addType = b.dataset.type;
+    Array.prototype.forEach.call(typeToggle.children, function (x) {
+      x.classList.toggle("active", x === b);
+    });
+    targetRow.style.display = addType === "count" ? "flex" : "none";
+    if (addType === "count") targetInput.focus();
+  });
+
   paletteHost.addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
@@ -1747,7 +1925,15 @@
     e.preventDefault();
     var name = nameInput.value.trim();
     if (!name) { nameInput.focus(); return; }
-    state.habits.push({ id: uid(), name: name, color: addColor });
+    var h = { id: uid(), name: name, color: addColor };
+    if (addType === "count") {
+      h.type = "count";
+      h.target = Math.max(1, Math.min(999, Math.round(Number(targetInput.value) || 1)));
+    } else {
+      h.type = "check";
+      h.target = 1;
+    }
+    state.habits.push(h);
     addColor = PALETTE[state.habits.length % PALETTE.length];
     nameInput.value = "";
     buildPalette();
@@ -1782,15 +1968,7 @@
       try {
         var s = JSON.parse(reader.result);
         if (!s || !Array.isArray(s.habits)) throw new Error("bad");
-        s.log = s.log || {};
-        s.notes = s.notes || {};
-        s.writing = s.writing || {};
-        s.view = s.view === "week" ? "week" : "month";
-        s.page = s.page === 2 ? 2 : 1;
-        s.lines = s.lines === 4 ? 4 : 5;
-        if (s.theme !== "day" && s.theme !== "auto") s.theme = "night";
-        s.anchor = s.anchor || iso(new Date());
-        state = s;
+        state = normalize(s);
         save();
         render();
         closeDrawer();
@@ -1800,6 +1978,24 @@
     };
     reader.readAsText(file);
   });
+
+  /* full screen */
+  var fsBtn = document.getElementById("fsBtn");
+  var fsEl = document.documentElement;
+  var supportsFs = !!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+  if (!supportsFs) fsBtn.style.display = "none";
+  function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function toggleFs() {
+    if (isFs()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen).call(fsEl);
+  }
+  function onFsChange() {
+    fsBtn.classList.toggle("on", isFs());
+    fsBtn.title = (isFs() ? "Exit full screen" : "Full screen") + " (F)";
+  }
+  fsBtn.addEventListener("click", toggleFs);
+  document.addEventListener("fullscreenchange", onFsChange);
+  document.addEventListener("webkitfullscreenchange", onFsChange);
 
   /* keyboard */
   document.addEventListener("keydown", function (e) {
@@ -1813,6 +2009,7 @@
     else if (e.key === "d" || e.key === "D") { state.theme = "day"; save(); render(); }
     else if (e.key === "n" || e.key === "N") { state.theme = "night"; save(); render(); }
     else if (e.key === "a" || e.key === "A") { state.theme = "auto"; save(); render(); }
+    else if (e.key === "f" || e.key === "F") { if (supportsFs) toggleFs(); }
     else if (e.key === "t" || e.key === "T") { state.anchor = iso(new Date()); save(); render(); }
     else if (e.key === "1") { state.page = 1; state.view = "month"; save(); render(); }
     else if (e.key === "2") { state.page = 2; state.view = "month"; save(); render(); }
