@@ -12,6 +12,9 @@ dependencies, data stays in your browser.
 - **Two habit kinds** — simple **done / not done** habits, or **count** habits with a target number (e.g. Water 8). Count chips show the running number; the drawer has a −/+ stepper.
 - **Streaks** — current and best streak per habit, with a bump animation when a streak grows.
 - **Stats & heat map** — check-ins, perfect days, completion %, and a monthly heat grid.
+- **Artwork** — each day shows a public-domain Japanese woodblock print; the **eye** button hides/shows it.
+- **Your own images** — the **image** button replaces the artwork with a picture you upload; the day drawer also lets you set (or remove) an image for that specific day.
+- **Day-card size** — a live **Size** slider scales the month day cards.
 - **Themes** — Day / Night / Auto (follows the OS). Night is the default.
 - **Full screen** — the ⤢ button (or `F`) toggles full screen.
 - **Backup** — export / import all data as JSON.

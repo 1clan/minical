@@ -153,6 +153,9 @@
   .ctrl-btn:hover { background: var(--fill-2); }
   .ctrl-btn:active { transform: scale(.94); }
   .ctrl-btn.on { background: var(--accent); color: #fff; }
+  .size-slider { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; font-weight: 500; letter-spacing: -0.01em; }
+  .size-slider input[type="range"] { width: 104px; accent-color: var(--accent); cursor: pointer; }
+  .seg-group { display: inline-flex; align-items: center; gap: 6px; }
 
   /* ---------- layout ---------- */
   .content {
@@ -393,7 +396,7 @@
 
   .day {
     position: relative;
-    min-height: 118px;
+    min-height: var(--daymin, 118px);
     border-radius: var(--radius-widget);
     background: var(--panel);
     box-shadow: var(--shadow);
@@ -431,7 +434,7 @@
   .day.has-note .note-dot { opacity: 1; }
 
   .w-date {
-    font-size: 30px;
+    font-size: calc(var(--daymin, 118px) * 0.254);
     font-weight: 200;
     letter-spacing: -0.02em;
     line-height: 1;
@@ -459,6 +462,15 @@
   }
   .day:hover .art { transform: scale(1.07); }
   .day.out .art { opacity: .22; transform: none; }
+  .no-art .art { display: none; }
+  .art.photo {
+    -webkit-mask-image: none;
+    mask-image: none;
+    transform: none;
+  }
+  .day:hover .art.photo { transform: scale(1.04); }
+  .day.has-photo .w-date, .day.has-photo .w-dow { text-shadow: 0 1px 4px rgba(255, 255, 255, .95), 0 1px 2px rgba(255, 255, 255, .9); }
+  html[data-theme="night"] .day.has-photo .w-date, html[data-theme="night"] .day.has-photo .w-dow { text-shadow: 0 1px 4px rgba(0, 0, 0, .95), 0 1px 2px rgba(0, 0, 0, .9); }
   .w-date, .w-dow { text-shadow: 0 1px 2px rgba(255, 255, 255, .5); }
   html[data-theme="night"] .w-date, html[data-theme="night"] .w-dow { text-shadow: 0 1px 3px rgba(0, 0, 0, .65); }
 
@@ -905,6 +917,25 @@
     font-size: 16px; font-weight: 600; color: var(--c);
     font-variant-numeric: tabular-nums;
   }
+  .d-art { display: flex; flex-direction: column; gap: 9px; }
+  .d-art-label {
+    font-size: 13px; font-weight: 600; letter-spacing: .04em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  .d-art-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .d-art-actions button {
+    font-family: inherit; font-size: 13px; font-weight: 500;
+    letter-spacing: -0.01em; color: var(--accent);
+    border: 0; background: var(--fill); padding: 9px 15px;
+    border-radius: 10px; cursor: pointer;
+    transition: background .15s ease;
+  }
+  .d-art-actions button:hover { background: var(--fill-2); }
+  .d-thumb {
+    width: 100%; height: 92px; border-radius: 12px;
+    background-size: cover; background-position: 50% 50%;
+    background-color: var(--fill);
+  }
 
   .d-note-label {
     font-size: 13px; font-weight: 600; letter-spacing: .04em;
@@ -967,8 +998,7 @@
     .rail { position: static; }
     .stage-head .period { font-size: 20px; min-width: 0; }
     .grid { gap: 8px; }
-    .day { min-height: 96px; border-radius: 18px; padding: 9px 10px 11px; }
-    .w-date { font-size: 24px; }
+    .day { border-radius: 18px; padding: 9px 10px 11px; }
     .week-card { padding: 14px 4px 8px; }
     .week-head, .line-row { grid-template-columns: 78px repeat(7, 1fr) 34px; }
     .stats-row { grid-template-columns: repeat(2, 1fr); }
@@ -1011,6 +1041,19 @@
           <button data-theme="night" class="active">Night</button>
           <button data-theme="auto">Auto</button>
         </div>
+        <button class="ctrl-btn" id="artBtn" title="Show / hide artwork" aria-label="Toggle artwork">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        </button>
+        <div class="seg-group">
+          <button class="ctrl-btn" id="imgBtn" title="Replace artwork with my image" aria-label="Upload image">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><circle cx="8.5" cy="8.5" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>
+          </button>
+          <button class="ctrl-btn" id="imgClear" title="Remove my images" style="display:none" aria-label="Remove my images">×</button>
+        </div>
+        <label class="size-slider" title="Day card size">Size
+          <input type="range" id="sizeRange" min="68" max="220" step="2" />
+        </label>
+        <input type="file" id="imgFile" accept="image/*" hidden />
         <button class="ctrl-btn" id="fsBtn" title="Full screen (F)" aria-label="Toggle full screen">⤢</button>
       </div>
     </header>
@@ -1070,6 +1113,15 @@
     </div>
     <div class="drawer-body">
       <div class="d-habits" id="dHabits"></div>
+      <div class="d-art">
+        <div class="d-art-label">Artwork</div>
+        <div class="d-thumb" id="dArtThumb"></div>
+        <div class="d-art-actions">
+          <button type="button" id="dArtPick">Choose image…</button>
+          <button type="button" id="dArtClear">Remove</button>
+        </div>
+        <input type="file" id="dArtFile" accept="image/*" hidden />
+      </div>
       <div class="d-note-label">Journal</div>
       <textarea class="d-note" id="dNote" placeholder="Write something about today…"></textarea>
       <div class="d-meta">
@@ -1160,11 +1212,15 @@
     s.values = s.values || {};
     s.notes = s.notes || {};
     s.writing = s.writing || {};
+    s.images = s.images || {};
+    s.customArt = s.customArt || null;
+    s.artOn = s.artOn !== false;
     s.view = s.view === "week" ? "week" : "month";
     s.page = s.page === 2 ? 2 : 1;
     s.lines = s.lines === 4 ? 4 : 5;
     if (s.theme !== "day" && s.theme !== "auto") s.theme = "night";
     if (!s.anchor) s.anchor = iso(new Date());
+    s.daySize = Math.max(68, Math.min(220, Math.round(Number(s.daySize) || (window.innerWidth <= 900 ? 92 : 118))));
     s.habits.forEach(function (h) {
       if (h.type !== "count") h.type = "check";
       h.target = h.type === "count" ? Math.max(1, Math.min(999, Math.round(Number(h.target) || 1))) : 1;
@@ -1175,13 +1231,13 @@
   function load() {
     try {
       var raw = localStorage.getItem(STORE);
-      if (!raw) return seed();
+      if (!raw) return normalize(seed());
       var s = JSON.parse(raw);
-      if (!s || !Array.isArray(s.habits)) return seed();
+      if (!s || !Array.isArray(s.habits)) return normalize(seed());
       var MAP = { "#e5503e": "#ff3b30", "#f4a03c": "#ff9500", "#f2cf4a": "#ffcc00", "#5fb85f": "#34c759", "#3ba99c": "#30b0c7", "#4a90d9": "#007aff", "#8e6bbf": "#af52de", "#e07a9a": "#ff2d55", "#c96f5a": "#ff9500", "#7d8fa8": "#8e8e93" };
       s.habits.forEach(function (h) { if (MAP[h.color]) h.color = MAP[h.color]; });
       return normalize(s);
-    } catch (e) { return seed(); }
+    } catch (e) { return normalize(seed()); }
   }
 
   var state = load();
@@ -1191,7 +1247,39 @@
   var lastStreak = {};
 
   function save() {
-    try { localStorage.setItem(STORE, JSON.stringify(state)); } catch (e) {}
+    try { localStorage.setItem(STORE, JSON.stringify(state)); return true; }
+    catch (e) { return false; }
+  }
+
+  function applySize() {
+    document.documentElement.style.setProperty("--daymin", state.daySize + "px");
+  }
+
+  function applyArt() {
+    document.documentElement.classList.toggle("no-art", !state.artOn);
+  }
+
+  function readImage(file, cb) {
+    var reader = new FileReader();
+    reader.onload = function () {
+      var im = new Image();
+      im.onload = function () {
+        var max = 640;
+        var w = im.width, h = im.height;
+        var k = Math.min(1, max / Math.max(w, h));
+        w = Math.max(1, Math.round(w * k)); h = Math.max(1, Math.round(h * k));
+        var c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(im, 0, 0, w, h);
+        var uri;
+        try { uri = c.toDataURL("image/jpeg", 0.72); } catch (e) { uri = reader.result; }
+        cb(uri);
+      };
+      im.onerror = function () { cb(null); };
+      im.src = reader.result;
+    };
+    reader.onerror = function () { cb(null); };
+    reader.readAsDataURL(file);
   }
 
   function getHabit(id) {
@@ -1447,18 +1535,27 @@
       var done = 0;
       state.habits.forEach(function (h) { if (isHabitDone(h, ds)) done++; });
       var ratio = total ? done / total : 0;
+      var photo = state.images[ds] || state.customArt || null;
       var cls = "day" + (out ? " out" : "") + (sameDay(d, today) ? " today" : "");
       if (state.notes[ds]) cls += " has-note";
       if (total && done === total) cls += " perfect";
+      if (photo) cls += " has-photo";
 
       var cell = el("div", cls);
       cell.dataset.day = ds;
       var isToday = sameDay(d, today);
-      var a = artFor(ds, ratio, isToday);
       var art = el("div", "art");
-      art.style.backgroundImage = 'url("' + a.uri + '")';
-      art.style.backgroundPosition = a.pos;
-      art.style.setProperty("--artop", a.op.toFixed(3));
+      if (photo) {
+        art.classList.add("photo");
+        art.style.backgroundImage = 'url("' + photo + '")';
+        art.style.backgroundPosition = "50% 50%";
+        art.style.setProperty("--artop", "1");
+      } else {
+        var a = artFor(ds, ratio, isToday);
+        art.style.backgroundImage = 'url("' + a.uri + '")';
+        art.style.backgroundPosition = a.pos;
+        art.style.setProperty("--artop", a.op.toFixed(3));
+      }
       art.setAttribute("aria-hidden", "true");
       cell.appendChild(art);
 
@@ -1633,6 +1730,12 @@
   function render() {
     flushWrites();
     applyTheme();
+    applySize();
+    applyArt();
+    document.getElementById("artBtn").classList.toggle("on", state.artOn);
+    document.getElementById("imgClear").style.display = state.customArt ? "" : "none";
+    document.getElementById("imgBtn").classList.toggle("on", !!state.customArt);
+    document.getElementById("sizeRange").parentNode.style.display = (state.page === 1 && state.view === "month") ? "" : "none";
     document.querySelectorAll("#pageToggle button").forEach(function (b) {
       b.classList.toggle("active", Number(b.dataset.page) === state.page);
     });
@@ -1659,11 +1762,26 @@
     }
 
     renderRail();
-    if (openDate) { renderDrawerHabits(); updateDrawerMeta(); }
+    if (openDate) { renderDrawerHabits(); renderDrawerArt(); updateDrawerMeta(); }
   }
 
   /* ---------- day drawer ---------- */
   var openDate = null;
+
+  function renderDrawerArt() {
+    var thumb = document.getElementById("dArtThumb");
+    var img = state.images[openDate] || state.customArt || null;
+    if (img) {
+      thumb.style.backgroundImage = 'url("' + img + '")';
+      thumb.style.display = "";
+    } else {
+      thumb.style.backgroundImage = "";
+      var a = artFor(openDate, 0, false);
+      thumb.style.backgroundImage = 'url("' + a.uri + '")';
+      thumb.style.display = "";
+    }
+    document.getElementById("dArtClear").style.display = state.images[openDate] ? "" : "none";
+  }
 
   function openDrawer(dateIso) {
     openDate = dateIso;
@@ -1672,6 +1790,7 @@
     document.getElementById("dDate").textContent = d.toLocaleString(undefined, { day: "numeric", month: "long", year: "numeric" });
     document.getElementById("dNote").value = state.notes[dateIso] || "";
     renderDrawerHabits();
+    renderDrawerArt();
     updateDrawerMeta();
     document.getElementById("drawer").classList.add("show");
     document.getElementById("drawer").setAttribute("aria-hidden", "false");
@@ -1940,6 +2059,76 @@
     save();
     render();
     nameInput.focus();
+  });
+
+  /* artwork: toggle, size, custom images */
+  document.getElementById("artBtn").addEventListener("click", function () {
+    state.artOn = !state.artOn;
+    save();
+    render();
+  });
+
+  var sizeRange = document.getElementById("sizeRange");
+  sizeRange.value = state.daySize;
+  sizeRange.addEventListener("input", function () {
+    state.daySize = Number(this.value);
+    applySize();
+  });
+  sizeRange.addEventListener("change", function () { save(); });
+
+  var imgFile = document.getElementById("imgFile");
+  document.getElementById("imgBtn").addEventListener("click", function () { imgFile.click(); });
+  imgFile.addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    this.value = "";
+    if (!f) return;
+    readImage(f, function (uri) {
+      if (!uri) { alert("Sorry, that image couldn't be read."); return; }
+      var prev = state.customArt;
+      state.customArt = uri;
+      if (!save()) {
+        state.customArt = prev;
+        save();
+        alert("That image is too large to store in this browser. Try a smaller one.");
+        return;
+      }
+      if (!state.artOn) { state.artOn = true; }
+      render();
+    });
+  });
+  document.getElementById("imgClear").addEventListener("click", function () {
+    state.customArt = null;
+    save();
+    render();
+  });
+
+  var dArtFile = document.getElementById("dArtFile");
+  document.getElementById("dArtPick").addEventListener("click", function () { if (openDate) dArtFile.click(); });
+  dArtFile.addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    this.value = "";
+    if (!f || !openDate) return;
+    var date = openDate;
+    readImage(f, function (uri) {
+      if (!uri) { alert("Sorry, that image couldn't be read."); return; }
+      var prev = state.images[date];
+      state.images[date] = uri;
+      if (!save()) {
+        if (prev === undefined) delete state.images[date]; else state.images[date] = prev;
+        save();
+        alert("That image is too large to store in this browser. Try a smaller one.");
+        return;
+      }
+      if (!state.artOn) state.artOn = true;
+      render();
+    });
+  });
+  document.getElementById("dArtClear").addEventListener("click", function () {
+    if (!openDate) return;
+    delete state.images[openDate];
+    save();
+    renderDrawerArt();
+    render();
   });
 
   /* export / import */
