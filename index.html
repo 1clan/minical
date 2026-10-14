@@ -574,6 +574,86 @@
     font-variant-numeric: tabular-nums;
   }
 
+  /* ---------- page 2: writing planner ---------- */
+  #pageToggle button, #linesToggle button { min-width: 34px; padding: 6px 11px; text-align: center; }
+
+  .planner {
+    background: var(--panel);
+    border-radius: var(--radius-card);
+    box-shadow: var(--shadow);
+    padding: 16px;
+  }
+  .planner-head {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .planner-head .phead {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .planner-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+  .pbox {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg);
+    border: .5px solid var(--line);
+    border-radius: 14px;
+    padding: 8px 9px 9px;
+    transition: box-shadow .18s ease, transform .18s ease;
+  }
+  .pbox:hover { box-shadow: var(--shadow); }
+  .pbox.out { opacity: .4; }
+  .pbox.today { box-shadow: 0 0 0 2px var(--accent); }
+  .pbox-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    min-height: 17px;
+  }
+  .pbox-head .pdow {
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .pbox-head .pnum { font-size: 15px; font-weight: 300; letter-spacing: -0.02em; }
+  .pbox.today .pbox-head .pnum, .pbox.today .pbox-head .pdow { color: var(--accent); }
+  .pwrite {
+    --lh: 24px;
+    width: 100%;
+    height: calc(var(--lines, 5) * var(--lh));
+    padding: 0;
+    border: 0;
+    outline: none;
+    resize: none;
+    overflow: auto;
+    background-color: transparent;
+    background-image: repeating-linear-gradient(
+      180deg,
+      transparent 0,
+      transparent calc(var(--lh) - 1px),
+      var(--line) calc(var(--lh) - 1px),
+      var(--line) var(--lh)
+    );
+    background-attachment: local;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: var(--lh);
+    letter-spacing: -0.01em;
+  }
+  .pwrite::placeholder { color: var(--muted-2); }
+  .pwrite:focus { background-color: var(--fill); border-radius: 8px; }
+
   /* ---------- stats + heat ---------- */
   .stats { margin-top: 26px; padding: 0 6px; }
   .stats-head {
@@ -828,6 +908,10 @@
     .week-head, .line-row { grid-template-columns: 78px repeat(7, 1fr) 34px; }
     .stats-row { grid-template-columns: repeat(2, 1fr); }
     .heat { max-width: none; }
+    .planner { padding: 10px; }
+    .planner-grid, .planner-head { gap: 5px; }
+    .pbox { padding: 6px 6px 7px; border-radius: 11px; }
+    .pwrite { font-size: 12px; }
   }
 </style>
 </head>
@@ -845,14 +929,22 @@
         </div>
       </div>
       <div class="controls">
-        <div class="seg" id="themeToggle">
-          <button data-theme="day">Day</button>
-          <button data-theme="night" class="active">Night</button>
-          <button data-theme="auto">Auto</button>
+        <div class="seg" id="pageToggle">
+          <button data-page="1" class="active" title="Page 1 — calendar">1</button>
+          <button data-page="2" title="Page 2 — writing">2</button>
         </div>
         <div class="seg" id="viewToggle">
           <button data-view="month" class="active">Month</button>
           <button data-view="week">Week</button>
+        </div>
+        <div class="seg" id="linesToggle" style="display:none">
+          <button data-lines="4">4</button>
+          <button data-lines="5" class="active">5</button>
+        </div>
+        <div class="seg" id="themeToggle">
+          <button data-theme="day">Day</button>
+          <button data-theme="night" class="active">Night</button>
+          <button data-theme="auto">Auto</button>
         </div>
       </div>
     </header>
@@ -890,7 +982,7 @@
       </section>
     </div>
 
-    <div class="hint">tap a day to open it &nbsp;·&nbsp; <kbd>←</kbd> <kbd>→</kbd> navigate &nbsp;·&nbsp; <kbd>M</kbd> <kbd>W</kbd> views &nbsp;·&nbsp; <kbd>D</kbd> <kbd>A</kbd> <kbd>N</kbd> theme &nbsp;·&nbsp; <kbd>T</kbd> today</div>
+    <div class="hint">tap a day to open it &nbsp;·&nbsp; pages <kbd>1</kbd> <kbd>2</kbd> &nbsp;·&nbsp; <kbd>←</kbd> <kbd>→</kbd> navigate &nbsp;·&nbsp; <kbd>M</kbd> <kbd>W</kbd> views &nbsp;·&nbsp; <kbd>D</kbd> <kbd>A</kbd> <kbd>N</kbd> theme &nbsp;·&nbsp; <kbd>T</kbd> today</div>
   </div>
 
   <div class="scrim" id="scrim"></div>
@@ -973,6 +1065,8 @@
     return {
       view: "month",
       theme: "night",
+      page: 1,
+      lines: 5,
       anchor: iso(new Date()),
       habits: [
         { id: uid(), name: "Exercise", color: "#ff3b30" },
@@ -981,7 +1075,8 @@
         { id: uid(), name: "Meditate", color: "#af52de" }
       ],
       log: {},
-      notes: {}
+      notes: {},
+      writing: {}
     };
   }
 
@@ -995,7 +1090,10 @@
       s.habits.forEach(function (h) { if (MAP[h.color]) h.color = MAP[h.color]; });
       s.log = s.log || {};
       s.notes = s.notes || {};
+      s.writing = s.writing || {};
       s.view = s.view === "week" ? "week" : "month";
+      s.page = s.page === 2 ? 2 : 1;
+      s.lines = s.lines === 4 ? 4 : 5;
       if (s.theme !== "day" && s.theme !== "auto") s.theme = "night";
       if (!s.anchor) s.anchor = iso(new Date());
       return s;
@@ -1147,7 +1245,7 @@
   function periodDays() {
     var anchor = fromISO(state.anchor);
     var days = [];
-    if (state.view === "month") {
+    if (state.view === "month" || state.page === 2) {
       var first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
       var start = startOfWeek(first);
       var last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
@@ -1162,7 +1260,7 @@
 
   function periodLabel() {
     var a = fromISO(state.anchor);
-    if (state.view === "month") {
+    if (state.view === "month" || state.page === 2) {
       return a.toLocaleString(undefined, { month: "long", year: "numeric" });
     }
     var s = startOfWeek(a), e = addDays(s, 6);
@@ -1330,6 +1428,49 @@
     host.appendChild(card);
   }
 
+  /* ---------- page 2: writing planner ---------- */
+  function renderPlanner(host) {
+    var anchor = fromISO(state.anchor);
+    var first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+    var start = startOfWeek(first);
+    var daysInMonth = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0).getDate();
+    var totalCells = ((first.getDay() + 6) % 7) + daysInMonth;
+    var rows = Math.ceil(totalCells / 7);
+    var today = new Date();
+
+    var wrap = el("div", "planner");
+
+    var head = el("div", "planner-head");
+    WEEKDAYS.forEach(function (w) { head.appendChild(el("div", "phead", w)); });
+    wrap.appendChild(head);
+
+    var grid = el("div", "planner-grid");
+    for (var i = 0; i < rows * 7; i++) {
+      var d = addDays(start, i);
+      var ds = iso(d);
+      var out = d.getMonth() !== anchor.getMonth();
+      var cls = "pbox" + (out ? " out" : "") + (sameDay(d, today) ? " today" : "");
+      var box = el("div", cls);
+
+      var h = el("div", "pbox-head");
+      h.appendChild(el("span", "pdow", WEEKDAYS[(d.getDay() + 6) % 7].slice(0, 3)));
+      h.appendChild(el("span", "pnum", String(d.getDate())));
+      box.appendChild(h);
+
+      var ta = el("textarea", "pwrite");
+      ta.dataset.write = ds;
+      ta.setAttribute("spellcheck", "false");
+      ta.setAttribute("aria-label", "Notes for " + ds);
+      ta.style.setProperty("--lines", String(state.lines));
+      ta.value = state.writing[ds] || "";
+      box.appendChild(ta);
+
+      grid.appendChild(box);
+    }
+    wrap.appendChild(grid);
+    host.appendChild(wrap);
+  }
+
   /* ---------- render ---------- */
   var mq = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
   function resolvedTheme() {
@@ -1344,19 +1485,34 @@
   }
 
   function render() {
+    flushWrites();
     applyTheme();
+    document.querySelectorAll("#pageToggle button").forEach(function (b) {
+      b.classList.toggle("active", Number(b.dataset.page) === state.page);
+    });
     document.querySelectorAll("#viewToggle button").forEach(function (b) {
       b.classList.toggle("active", b.dataset.view === state.view);
     });
+    document.querySelectorAll("#linesToggle button").forEach(function (b) {
+      b.classList.toggle("active", Number(b.dataset.lines) === state.lines);
+    });
+    document.getElementById("viewToggle").style.display = state.page === 2 ? "none" : "";
+    document.getElementById("linesToggle").style.display = state.page === 2 ? "" : "none";
     document.getElementById("periodLabel").textContent = periodLabel();
 
     var host = document.getElementById("calendar");
     host.innerHTML = "";
-    if (state.view === "month") renderMonth(host);
-    else renderWeek(host);
+    var statsHost = document.getElementById("stats");
+    if (state.page === 2) {
+      renderPlanner(host);
+      statsHost.innerHTML = "";
+    } else {
+      if (state.view === "month") renderMonth(host);
+      else renderWeek(host);
+      renderStats();
+    }
 
     renderRail();
-    renderStats();
     if (openDate) { renderDrawerHabits(); updateDrawerMeta(); }
   }
 
@@ -1458,6 +1614,7 @@
 
   /* ---------- events ---------- */
   document.getElementById("calendar").addEventListener("click", function (e) {
+    if (state.page === 2) return;
     var b = e.target.closest("[data-habit]");
     if (b) { toggle(b.dataset.habit, b.dataset.date); return; }
     var day = e.target.closest("[data-day]");
@@ -1486,6 +1643,48 @@
     state.view = b.dataset.view;
     save();
     render();
+  });
+
+  document.getElementById("pageToggle").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    var p = Number(b.dataset.page);
+    if (p === state.page) return;
+    flushWrites();
+    state.page = p;
+    state.view = "month";
+    save();
+    render();
+  });
+
+  document.getElementById("linesToggle").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    var n = Number(b.dataset.lines);
+    if (n === state.lines) return;
+    flushWrites();
+    state.lines = n;
+    save();
+    render();
+  });
+
+  var writeTimer = null;
+  function flushWrites() {
+    if (writeTimer) { clearTimeout(writeTimer); writeTimer = null; }
+    save();
+  }
+  document.getElementById("calendar").addEventListener("input", function (e) {
+    var ta = e.target.closest("[data-write]");
+    if (!ta) return;
+    state.writing[ta.dataset.write] = ta.value;
+    clearTimeout(writeTimer);
+    writeTimer = setTimeout(function () { writeTimer = null; save(); }, 320);
+  });
+  document.getElementById("calendar").addEventListener("change", function (e) {
+    var ta = e.target.closest("[data-write]");
+    if (!ta) return;
+    state.writing[ta.dataset.write] = ta.value;
+    flushWrites();
   });
 
   document.getElementById("themeToggle").addEventListener("click", function (e) {
@@ -1582,7 +1781,10 @@
         if (!s || !Array.isArray(s.habits)) throw new Error("bad");
         s.log = s.log || {};
         s.notes = s.notes || {};
+        s.writing = s.writing || {};
         s.view = s.view === "week" ? "week" : "month";
+        s.page = s.page === 2 ? 2 : 1;
+        s.lines = s.lines === 4 ? 4 : 5;
         if (s.theme !== "day" && s.theme !== "auto") s.theme = "night";
         s.anchor = s.anchor || iso(new Date());
         state = s;
@@ -1609,6 +1811,8 @@
     else if (e.key === "n" || e.key === "N") { state.theme = "night"; save(); render(); }
     else if (e.key === "a" || e.key === "A") { state.theme = "auto"; save(); render(); }
     else if (e.key === "t" || e.key === "T") { state.anchor = iso(new Date()); save(); render(); }
+    else if (e.key === "1") { state.page = 1; state.view = "month"; save(); render(); }
+    else if (e.key === "2") { state.page = 2; state.view = "month"; save(); render(); }
   });
 
   /* follow the system theme live while in Auto */
